@@ -1,5 +1,6 @@
 extern crate hidapi;
 
+mod tui;
 use hidapi::HidApi;
 use std::{thread::sleep, time::Duration};
 
@@ -8,6 +9,8 @@ const WAIT_TIME: Duration = Duration::new(0, 50);
 
 fn main() {
     if let Ok(api) = HidApi::new() {
+        tui::app();
+
         if let Some(dev) = api.device_list().next() {
             println!(
                 "dev:{:?}, manufacturer:{:?}",
