@@ -2,14 +2,20 @@ extern crate hidapi;
 
 mod tui;
 use hidapi::HidApi;
-use std::{thread::sleep, time::Duration};
+use ratatui::backend::CrosstermBackend;
+use std::{
+    io::{self, stdout},
+    thread::sleep,
+    time::Duration,
+};
 
 const BUF_SIZE: usize = 32;
 const WAIT_TIME: Duration = Duration::new(0, 50);
 
-fn main() {
+fn main() -> io::Result<()> {
     if let Ok(api) = HidApi::new() {
-        tui::app();
+        let mut terminal = tui::init()?;
+        let app = tui::app::App::default().run(&mut terminal);
 
         if let Some(dev) = api.device_list().next() {
             println!(
@@ -30,4 +36,6 @@ fn main() {
             }
         }
     }
+
+    Ok(())
 }

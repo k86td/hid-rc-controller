@@ -1,52 +1,38 @@
-use std::{
-    io::{stdout, Result},
-    time::Duration,
-};
+pub mod app;
 
 use ratatui::{
     backend::CrosstermBackend,
+    buffer::Buffer,
     crossterm::{
-        event::{self, KeyCode, KeyEventKind},
+        event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
+        execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-        ExecutableCommand,
     },
+    layout::{Alignment, Rect},
     style::Stylize,
-    widgets::Paragraph,
-    Terminal,
+    symbols::border,
+    text::{Line, Text},
+    widgets::{
+        block::{Position, Title},
+        Block, Paragraph, Widget,
+    },
+    Frame, Terminal,
 };
+use std::io::{self, stdout, Stdout};
 
-pub fn app() -> Result<()> {
-    stdout().execute(EnterAlternateScreen)?;
+pub type Tui = Terminal<CrosstermBackend<Stdout>>;
+
+// initalize terminal and open a "popup" window
+pub fn init() -> io::Result<Tui> {
+    execute!(stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    terminal.clear()?;
 
-    loop {
-        // draw terminal
-        terminal.draw(|frame| {
-            let area = frame.area();
-            frame.render_widget(
-                Paragraph::new("Hello Ratatui, Press q to quit")
-                    .white()
-                    .on_blue(),
-                area,
-            )
-        })?;
+    Terminal::new(CrosstermBackend::new(stdout()))
+}
 
-        // handle events
-        if event::poll(Duration::from_millis(16))? {
-            if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press
-                    && (key.code == KeyCode::Char('q') || key.code == KeyCode::Char('Q'))
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    stdout().execute(LeaveAlternateScreen)?;
+// destroy terminal window and restore previous view
+pub fn restore() -> io::Result<()> {
+    execute!(stdout(), LeaveAlternateScreen)?;
     disable_raw_mode()?;
-
     Ok(())
 }
