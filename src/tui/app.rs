@@ -9,8 +9,8 @@ use ratatui::{
     text::{Line, Text},
     widgets::{
         block::{Position, Title},
-        Block, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph, StatefulWidget,
-        Widget,
+        Block, HighlightSpacing, List, ListDirection, ListItem, ListState, Padding, Paragraph,
+        StatefulWidget, Widget,
     },
     Frame,
 };
@@ -22,13 +22,13 @@ enum State {
     #[default]
     LoadingDevices,
     FoundDevice(DeviceList),
+    UseDevice(DeviceInfo),
 }
 
 #[derive(Debug, Default)]
 pub struct App {
     exit: bool,
     state: State,
-    counter: u8,
 }
 
 #[derive(Debug)]
@@ -55,18 +55,13 @@ impl App {
             State::LoadingDevices => {
                 if let Ok(api) = HidApi::new() {
                     self.state = State::FoundDevice(DeviceList {
-                        items: api
-                            .device_list()
-                            .map(|dev| dev.to_owned())
-                            // .map(|dev| dev.manufacturer_string())
-                            // .filter(|dev| dev.is_some() && !dev.unwrap().is_empty())
-                            // .map(|dev| dev.unwrap().to_string())
-                            .collect(),
+                        items: api.device_list().map(|dev| dev.to_owned()).collect(),
                         state: ListState::default(),
                     })
                 }
             }
             State::FoundDevice(_) => {}
+            _ => {}
         }
     }
 
@@ -75,20 +70,14 @@ impl App {
     }
 
     fn select_next(&mut self) {
-        match &mut self.state {
-            State::FoundDevice(ref mut device_list) => {
-                device_list.state.select_next();
-            }
-            _ => {}
+        if let State::FoundDevice(ref mut device_list) = &mut self.state {
+            device_list.state.select_next();
         }
     }
 
     fn select_previous(&mut self) {
-        match &mut self.state {
-            State::FoundDevice(ref mut device_list) => {
-                device_list.state.select_previous();
-            }
-            _ => {}
+        if let State::FoundDevice(ref mut device_list) = &mut self.state {
+            device_list.state.select_previous();
         }
     }
 
@@ -105,11 +94,20 @@ impl App {
         Ok(())
     }
 
+    fn choose_selected_device(&mut self) {
+        if let State::FoundDevice(list) = &self.state {
+            if let Some(dev_index) = list.state.selected() {
+                self.state = State::UseDevice(list.items[dev_index].clone());
+            }
+        }
+    }
+
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Up => self.select_previous(),
             KeyCode::Down => self.select_next(),
+            KeyCode::Enter => self.choose_selected_device(),
             _ => {}
         }
     }
@@ -135,16 +133,6 @@ impl Widget for &mut App {
     where
         Self: Sized,
     {
-        let counter_text = Text::from(vec![Line::from(vec![
-            "Value: ".into(),
-            self.counter.to_string().yellow(),
-        ])]);
-
-        // Paragraph::new(counter_text)
-        //     .centered()
-        //     .block(block)
-        //     .render(area, buf);
-
         self.state.render(area, buf);
     }
 }
@@ -191,6 +179,12 @@ impl Widget for &mut State {
 
                 StatefulWidget::render(list, area, buf, &mut devices.state)
             }
+            State::UseDevice(device) => Paragraph::new(format!(
+                "Using device: {}",
+                device.manufacturer_string().unwrap()
+            ))
+            .block(block)
+            .render(area, buf),
         }
     }
 }
