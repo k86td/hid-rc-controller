@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, default, io, time::Duration};
 
-use hidapi::{DeviceInfo, HidApi};
+use hidapi::{DeviceInfo, HidApi, HidDevice};
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     layout::Alignment,
@@ -17,18 +17,30 @@ use ratatui::{
 
 use super::Tui;
 
+const WAIT_TIME: Duration = Duration::from_millis(16);
+const BUF_SIZE: usize = 32;
+
 #[derive(Debug, Default)]
 enum State {
     #[default]
     LoadingDevices,
     FoundDevice(DeviceList),
     UseDevice(DeviceInfo),
+    OpenedDevice(Device),
 }
+
+type DeviceData = [u8; BUF_SIZE];
 
 #[derive(Debug, Default)]
 pub struct App {
     exit: bool,
     state: State,
+}
+
+#[derive(Debug)]
+struct Device {
+    device: HidDevice,
+    data: Option<DeviceData>,
 }
 
 #[derive(Debug)]
@@ -50,8 +62,9 @@ impl App {
         Ok(())
     }
 
+    // TODO: make this async or multi-threaded
     fn process(&mut self) {
-        match self.state {
+        match &mut self.state {
             State::LoadingDevices => {
                 if let Ok(api) = HidApi::new() {
                     self.state = State::FoundDevice(DeviceList {
@@ -60,7 +73,35 @@ impl App {
                     })
                 }
             }
-            State::FoundDevice(_) => {}
+            State::UseDevice(chosen_device) => {
+                if let Ok(api) = HidApi::new() {
+                    match chosen_device.open_device(&api) {
+                        Ok(device) => {
+                            self.state = State::OpenedDevice(Device { device, data: None })
+                        }
+                        // FIX: this is a very ugly, should handle failing to open device
+                        Err(e) => panic!("got error while opening device: {}", e),
+                    }
+                } else {
+                    panic!("Couldn't open hidapi.");
+                }
+            }
+            State::OpenedDevice(ref mut device) => {
+                if let Some(ref mut buf) = device.data {
+                    device
+                        .device
+                        .read_timeout(buf, WAIT_TIME.as_millis() as i32)
+                        .unwrap();
+                } else {
+                    let mut buf = [0; BUF_SIZE];
+                    device
+                        .device
+                        .read_timeout(&mut buf, WAIT_TIME.as_millis() as i32)
+                        // .read(&mut buf)
+                        .unwrap();
+                    device.data = Some(buf)
+                }
+            }
             _ => {}
         }
     }
@@ -179,12 +220,16 @@ impl Widget for &mut State {
 
                 StatefulWidget::render(list, area, buf, &mut devices.state)
             }
-            State::UseDevice(device) => Paragraph::new(format!(
-                "Using device: {}",
-                device.manufacturer_string().unwrap()
-            ))
-            .block(block)
-            .render(area, buf),
+            State::OpenedDevice(device) => {
+                if let Some(data) = device.data {
+                    Paragraph::new(format!("Received data: {:?}", data[2]))
+                        .block(block)
+                        .render(area, buf);
+                } else {
+                    Paragraph::new("No data yet").block(block).render(area, buf);
+                }
+            }
+            _ => Paragraph::new(format!("Currently in state: {:?}", self)).render(area, buf),
         }
     }
 }
