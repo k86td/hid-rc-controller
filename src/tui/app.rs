@@ -97,7 +97,6 @@ impl App {
                     device
                         .device
                         .read_timeout(&mut buf, WAIT_TIME.as_millis() as i32)
-                        // .read(&mut buf)
                         .unwrap();
                     device.data = Some(buf)
                 }
