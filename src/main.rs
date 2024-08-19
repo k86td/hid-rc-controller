@@ -14,6 +14,8 @@ fn main() -> io::Result<()> {
         let mut terminal = tui::init()?;
         let app = tui::app::App::default().run(&mut terminal);
 
+        tui::restore()?;
+
         // if let Some(dev) = api.device_list().next() {
         //     println!(
         //         "dev:{:?}, manufacturer:{:?}",
@@ -22,13 +24,10 @@ fn main() -> io::Result<()> {
         //     );
         //
         //     if let Ok(wheel) = dev.open_device(&api) {
-        //         let mut buf: [u8; buf_size] = [0; buf_size];
+        //         let mut buf: [u8; 32] = [0; 32];
         //         loop {
-        //             wheel
-        //                 .read_timeout(&mut buf, WAIT_TIME.as_millis() as i32)
-        //                 .unwrap();
-        //             dbg!(buf);
-        //             sleep(WAIT_TIME);
+        //             wheel.read(&mut buf).unwrap();
+        //             dbg!(&buf[1..3]);
         //         }
         //     }
         // }
