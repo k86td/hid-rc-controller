@@ -21,8 +21,6 @@ use ratatui::{
     Frame,
 };
 
-use super::Tui;
-
 // const WAIT_TIME: Duration = Duration::from_millis(16);
 const WAIT_TIME: Duration = Duration::from_nanos(16);
 const BUF_SIZE: usize = 32;
