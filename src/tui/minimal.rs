@@ -36,7 +36,7 @@ impl From<[u8; 32]> for SteeringWheelData {
     fn from(value: [u8; 32]) -> Self {
         Self {
             steering_angle: value[2],
-            gas_pedal: value[7..=8].into(),
+            gas_pedal: value[5..=6].into(),
             brake_pedal: value[3..=4].into(),
         }
     }
@@ -70,8 +70,11 @@ pub fn app(api: &mut HidApi, stdout: &mut Stdout) -> io::Result<()> {
             let mut buf: [u8; 32] = [0; 32];
 
             loop {
+                // TODO: maybe put drawing on another thread and read (wheel data) + write (to dac via i2c) on a
+                // different one.
                 wheel.read(&mut buf).unwrap();
                 let wheel_data: SteeringWheelData = buf.into();
+
                 if crossterm::event::poll(Duration::from_nanos(10))? {
                     let event = read()?;
                     if event == Event::Key(KeyCode::Char('q').into()) {
