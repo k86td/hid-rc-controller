@@ -1,4 +1,10 @@
-use std::{borrow::BorrowMut, default, io, time::Duration};
+use std::{
+    borrow::BorrowMut,
+    default, io,
+    sync::mpsc,
+    thread::{self, sleep},
+    time::Duration,
+};
 
 use hidapi::{DeviceInfo, HidApi, HidDevice};
 use ratatui::{
@@ -15,9 +21,8 @@ use ratatui::{
     Frame,
 };
 
-use super::Tui;
-
-const WAIT_TIME: Duration = Duration::from_millis(16);
+// const WAIT_TIME: Duration = Duration::from_millis(16);
+const WAIT_TIME: Duration = Duration::from_nanos(16);
 const BUF_SIZE: usize = 32;
 
 #[derive(Debug, Default)]
@@ -39,8 +44,9 @@ pub struct App {
 
 #[derive(Debug)]
 struct Device {
-    device: HidDevice,
+    // device: HidDevice,
     data: Option<DeviceData>,
+    channel: mpsc::Receiver<DeviceData>,
 }
 
 #[derive(Debug)]
@@ -48,7 +54,6 @@ pub struct DeviceList {
     items: Vec<DeviceInfo>,
     state: ListState,
 }
-
 impl App {
     pub fn run(&mut self, terminal: &mut Tui) -> io::Result<()> {
         while !self.exit {
@@ -77,7 +82,19 @@ impl App {
                 if let Ok(api) = HidApi::new() {
                     match chosen_device.open_device(&api) {
                         Ok(device) => {
-                            self.state = State::OpenedDevice(Device { device, data: None })
+                            let (tx, rx) = mpsc::sync_channel(0);
+                            thread::spawn(move || {
+                                let mut buf = [0; BUF_SIZE];
+                                loop {
+                                    device.read(&mut buf).unwrap();
+                                    tx.send(buf).unwrap();
+                                }
+                            });
+                            self.state = State::OpenedDevice(Device {
+                                // device,
+                                data: None,
+                                channel: rx,
+                            })
                         }
                         // FIX: this is a very ugly, should handle failing to open device
                         Err(e) => panic!("got error while opening device: {}", e),
@@ -86,21 +103,21 @@ impl App {
                     panic!("Couldn't open hidapi.");
                 }
             }
-            State::OpenedDevice(ref mut device) => {
-                if let Some(ref mut buf) = device.data {
-                    device
-                        .device
-                        .read_timeout(buf, WAIT_TIME.as_millis() as i32)
-                        .unwrap();
-                } else {
-                    let mut buf = [0; BUF_SIZE];
-                    device
-                        .device
-                        .read_timeout(&mut buf, WAIT_TIME.as_millis() as i32)
-                        .unwrap();
-                    device.data = Some(buf)
-                }
-            }
+            // State::OpenedDevice(ref mut device) => {
+            //     if let Some(ref mut buf) = device.data {
+            //         device
+            //             .device
+            //             .read_timeout(buf, WAIT_TIME.as_millis() as i32)
+            //             .unwrap();
+            //     } else {
+            //         let mut buf = [0; BUF_SIZE];
+            //         device
+            //             .device
+            //             .read_timeout(&mut buf, WAIT_TIME.as_millis() as i32)
+            //             .unwrap();
+            //         device.data = Some(buf)
+            //     }
+            // }
             _ => {}
         }
     }
@@ -122,7 +139,7 @@ impl App {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        if event::poll(Duration::from_millis(16))? {
+        if event::poll(WAIT_TIME)? {
             match event::read()? {
                 Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                     self.handle_key_event(key_event)
@@ -182,7 +199,7 @@ impl Widget for &mut State {
     where
         Self: Sized,
     {
-        let title = Title::from(" RC Car Controller ".bold());
+        let title = Title::from(format!(" RC Car Controller ({:?})", self).bold());
         let block = Block::bordered()
             .title(title.alignment(Alignment::Center))
             .title(
@@ -220,13 +237,17 @@ impl Widget for &mut State {
                 StatefulWidget::render(list, area, buf, &mut devices.state)
             }
             State::OpenedDevice(device) => {
-                if let Some(data) = device.data {
-                    Paragraph::new(format!("Received data: {:?}", data[2]))
-                        .block(block)
-                        .render(area, buf);
-                } else {
-                    Paragraph::new("No data yet").block(block).render(area, buf);
-                }
+                let channel_data = device.channel.recv().unwrap();
+                Paragraph::new(format!("Received data: {:?}", channel_data))
+                    .block(block)
+                    .render(area, buf);
+                // if let Some(data) = device.data {
+                //     Paragraph::new(format!("Received data: {:?}", data[2]))
+                //         .block(block)
+                //         .render(area, buf);
+                // } else {
+                //     Paragraph::new("No data yet").block(block).render(area, buf);
+                // }
             }
             _ => Paragraph::new(format!("Currently in state: {:?}", self)).render(area, buf),
         }
