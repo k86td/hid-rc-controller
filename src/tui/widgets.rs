@@ -18,3 +18,5 @@ pub fn steering_wheel_chart(value: usize, width: usize, max: usize, symbol: &str
 
     format!("{}|{}", left, right)
 }
+
+

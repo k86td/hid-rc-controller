@@ -21,6 +21,8 @@ pub fn app(api: &mut HidApi, stdout: &mut Stdout) -> io::Result<()> {
                     let event = read()?;
                     if event == Event::Key(KeyCode::Char('q').into()) {
                         break;
+                    } else if Event::Resize {
+                        continue;
                     }
                 } else {
                     queue!(stdout, Clear(terminal::ClearType::FromCursorUp),).unwrap();
