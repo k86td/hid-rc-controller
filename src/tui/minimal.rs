@@ -141,7 +141,7 @@ pub fn app(
                             "throttle_value: {} (DAC: {}), steering: {} (DAC: {})",
                             throttle_voltage,
                             convert_value_to_dac(throttle_voltage, 4095.0, 3.3),
-                            wheel_data.steering_angle,
+                            value_to_voltage(wheel_data.steering_angle as usize, 255, 0.0, 3.3),
                             convert_value_to_dac(wheel_data.steering_angle as f32, 4095.0, 255.0)
                         ),
                         5,
