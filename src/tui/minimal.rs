@@ -1,3 +1,8 @@
+use crate::{
+    drivers::{linux_i2c::ExtendedLinuxI2CDevice, mcp4725::MCP4725},
+    utils::{convert_value_to_dac, value_to_voltage},
+};
+
 use super::{utils::print_middle_row, widgets::steering_wheel_chart};
 use crossterm::{
     event::{read, Event, KeyCode},
@@ -66,7 +71,12 @@ impl DualPrecisionPedal {
     }
 }
 
-pub fn app(api: &mut HidApi, stdout: &mut Stdout) -> io::Result<()> {
+pub fn app(
+    api: &mut HidApi,
+    stdout: &mut Stdout,
+    // gas_dac: &mut MCP4725<ExtendedLinuxI2CDevice>,
+    // steering_dac: &mut MCP4725<ExtendedLinuxI2CDevice>,
+) -> io::Result<()> {
     if let Some(dev) = api.device_list().next() {
         if let Ok(wheel) = dev.open_device(api) {
             let mut buf: [u8; 32] = [0; 32];
@@ -76,6 +86,22 @@ pub fn app(api: &mut HidApi, stdout: &mut Stdout) -> io::Result<()> {
                 // different one.
                 wheel.read(&mut buf).unwrap();
                 let wheel_data: SteeringWheelData = buf.into();
+
+                // TODO: could make DAC utils to keep supply voltage and make conversion instead of
+                // manually calling the function.
+                let throttle_voltage = {
+                    if wheel_data.brake() < 1020 {
+                        value_to_voltage(wheel_data.brake(), 1020, 1.0, 1.65)
+                    } else if wheel_data.gas() > 0 {
+                        value_to_voltage(wheel_data.gas(), 1020, 1.0, 1.65)
+                    } else {
+                        1.65
+                    }
+                };
+
+                // gas_dac
+                //     .write_dac_register(convert_value_to_dac(throttle_voltage, 4095.0, 3.3))
+                //     .unwrap();
 
                 if crossterm::event::poll(Duration::from_nanos(10))? {
                     let event = read()?;
@@ -100,6 +126,17 @@ pub fn app(api: &mut HidApi, stdout: &mut Stdout) -> io::Result<()> {
                     print_middle_row(
                         &format!("gas: {} | brake: {}", wheel_data.gas(), wheel_data.brake()),
                         4,
+                        stdout,
+                    );
+                    print_middle_row(
+                        &format!(
+                            "throttle_value: {} (DAC: {}), steering: {} (DAC: {})",
+                            throttle_voltage,
+                            convert_value_to_dac(throttle_voltage, 4095.0, 3.3),
+                            wheel_data.steering_angle,
+                            convert_value_to_dac(wheel_data.steering_angle as f32, 4095.0, 255.0)
+                        ),
+                        5,
                         stdout,
                     );
                 }

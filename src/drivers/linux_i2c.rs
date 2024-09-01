@@ -5,12 +5,12 @@ use linux_embedded_hal::i2cdev::{
 };
 
 pub struct ExtendedLinuxI2CDevice {
-    dev: LinuxI2CDevice,
+    pub dev: LinuxI2CDevice,
 }
 
 #[derive(Debug)]
 pub struct ExtendedLinuxI2CError {
-    inner: LinuxI2CError,
+    pub inner: LinuxI2CError,
 }
 
 impl Error for ExtendedLinuxI2CError {

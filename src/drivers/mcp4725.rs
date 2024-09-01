@@ -4,7 +4,7 @@
 
 use embedded_hal::i2c::{ErrorType, I2c};
 
-struct MCP4725<I2C> {
+pub struct MCP4725<I2C> {
     i2c: I2C,
     address: u8,
 }

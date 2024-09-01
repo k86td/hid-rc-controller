@@ -13,3 +13,7 @@ pub fn value_to_voltage(
 ) -> f32 {
     (value as f32 * voltage_max) / value_max as f32 + voltage_offset
 }
+
+pub fn convert_value_to_dac(value: f32, dac_max: f32, value_max: f32) -> u16 {
+    (value * dac_max / value_max) as u16
+}
