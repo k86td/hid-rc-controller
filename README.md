@@ -3,8 +3,12 @@
 
 - [x] center text in the middle of the terminal
 - [x] massive cleanup when the tests are done
+- [x] write some tests (very minimal atm)
+- [ ] hook MCP4725 with minimal tui app
+  - [ ] hook steering
+  - [ ] hook brake
+  - [ ] hook gas
 - [ ] vertical widgets?
-- [ ] write some tests
 
 - use https://github.com/vgasparyan/mcp4725-rs for DAL output
 - use https://github.com/golemparts/rppal to interact with GPIO
