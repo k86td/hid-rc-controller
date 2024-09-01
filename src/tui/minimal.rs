@@ -74,8 +74,8 @@ impl DualPrecisionPedal {
 pub fn app(
     api: &mut HidApi,
     stdout: &mut Stdout,
-    // gas_dac: &mut MCP4725<ExtendedLinuxI2CDevice>,
-    // steering_dac: &mut MCP4725<ExtendedLinuxI2CDevice>,
+    gas_dac: &mut MCP4725<ExtendedLinuxI2CDevice>,
+    steering_dac: &mut MCP4725<ExtendedLinuxI2CDevice>,
 ) -> io::Result<()> {
     if let Some(dev) = api.device_list().next() {
         if let Ok(wheel) = dev.open_device(api) {
@@ -99,9 +99,17 @@ pub fn app(
                     }
                 };
 
-                // gas_dac
-                //     .write_dac_register(convert_value_to_dac(throttle_voltage, 4095.0, 3.3))
-                //     .unwrap();
+                gas_dac
+                    .write_dac_register(convert_value_to_dac(throttle_voltage, 4095.0, 3.3))
+                    .unwrap();
+
+                steering_dac
+                    .write_dac_register(convert_value_to_dac(
+                        wheel_data.steering_angle as f32,
+                        4095.0,
+                        255.0,
+                    ))
+                    .unwrap();
 
                 if crossterm::event::poll(Duration::from_nanos(10))? {
                     let event = read()?;
