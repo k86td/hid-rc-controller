@@ -25,7 +25,7 @@ impl SteeringWheelData {
 
     pub fn brake(&self) -> usize {
         let pedal = &self.brake_pedal;
-        DualPrecisionPedal::convert_dual_precision(pedal.precise, pedal.general, 1020, true)
+        DualPrecisionPedal::convert_dual_precision(pedal.precise, pedal.general, 1020, false)
     }
 }
 
@@ -61,7 +61,7 @@ impl DualPrecisionPedal {
                 .try_into()
                 .unwrap()
         } else {
-            (general * 255 + precise).into()
+            general as usize * 255 + precise as usize
         }
     }
 }
