@@ -7,5 +7,7 @@ edition = "2021"
 
 [dependencies]
 crossterm = "0.28.1"
+embedded-hal = "1.0.0"
 hidapi = "2.6.3"
+linux-embedded-hal = "0.4.0"
 ratatui = "0.28.0"

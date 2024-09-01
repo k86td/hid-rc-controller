@@ -1,5 +1,6 @@
 // extern crate hidapi;
 
+mod drivers;
 mod tui;
 
 use hidapi::HidApi;
