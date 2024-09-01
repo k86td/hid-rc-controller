@@ -6,7 +6,6 @@ use crossterm::{
 };
 use hidapi::HidApi;
 use std::{
-    fmt::Display,
     io::{self, Stdout},
     time::Duration,
 };
@@ -16,6 +15,18 @@ pub struct SteeringWheelData {
     steering_angle: u8,
     gas_pedal: DualPrecisionPedal,
     brake_pedal: DualPrecisionPedal,
+}
+
+impl SteeringWheelData {
+    pub fn gas(&self) -> usize {
+        let pedal = &self.gas_pedal;
+        DualPrecisionPedal::convert_dual_precision(pedal.precise, pedal.general, 1020, true)
+    }
+
+    pub fn brake(&self) -> usize {
+        let pedal = &self.brake_pedal;
+        DualPrecisionPedal::convert_dual_precision(pedal.precise, pedal.general, 1020, true)
+    }
 }
 
 pub struct DualPrecisionPedal {
@@ -55,15 +66,6 @@ impl DualPrecisionPedal {
     }
 }
 
-impl Display for DualPrecisionPedal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(
-            &DualPrecisionPedal::convert_dual_precision(self.precise, self.general, 1020, true)
-                .to_string(),
-        )
-    }
-}
-
 pub fn app(api: &mut HidApi, stdout: &mut Stdout) -> io::Result<()> {
     if let Some(dev) = api.device_list().next() {
         if let Ok(wheel) = dev.open_device(api) {
@@ -96,10 +98,7 @@ pub fn app(api: &mut HidApi, stdout: &mut Stdout) -> io::Result<()> {
                         stdout,
                     );
                     print_middle_row(
-                        &format!(
-                            "gas: {} | brake: {}",
-                            wheel_data.gas_pedal, wheel_data.brake_pedal
-                        ),
+                        &format!("gas: {} | brake: {}", wheel_data.gas(), wheel_data.brake()),
                         4,
                         stdout,
                     );
