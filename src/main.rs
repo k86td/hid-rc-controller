@@ -1,7 +1,8 @@
 // extern crate hidapi;
 
-mod drivers;
-mod tui;
+pub mod drivers;
+pub mod tui;
+pub mod utils;
 
 use hidapi::HidApi;
 use std::io;
