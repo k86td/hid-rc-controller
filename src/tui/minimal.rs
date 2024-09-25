@@ -91,7 +91,7 @@ pub fn app(
                 // manually calling the function.
                 let throttle_voltage = {
                     if wheel_data.brake() < 1020 {
-                        value_to_voltage(wheel_data.brake(), 1020, 1.0, 1.65)
+                        value_to_voltage(wheel_data.brake(), 1020, 1.2, 0.45)
                     } else if wheel_data.gas() > 0 {
                         value_to_voltage(wheel_data.gas(), 1020, 1.0, 1.65)
                     } else {
