@@ -1,5 +1,5 @@
 {
-  description = "A very basic flake";
+  description = "Web-hid-controller flake";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs";
@@ -14,8 +14,8 @@
     in {
       devShells.default = pkgs.mkShell {
         buildInputs = with pkgs; [
-          pkg-config
-          systemd
+            systemd
+            gotools
         ];
       };
   });
