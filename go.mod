@@ -4,6 +4,6 @@ go 1.23.3
 
 require github.com/sstallion/go-hid v0.14.1
 
-require golang.org/x/sys v0.8.0 // indirect
+require golang.org/x/sys v0.32.0 // indirect
 
 replace github.com/k86td/web-hid-controller/gen => ./gen
