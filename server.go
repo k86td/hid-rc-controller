@@ -72,7 +72,7 @@ func (i ShortItem) String() string {
 	case ItemMainStartCollection:
 		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, MainCollectionType(i.Data[0]))
 	default:
-		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, i.Data)
+		return fmt.Sprintf("ShortItem<%v>{ %v } (%08b)", i.BType, i.Data, i.Data)
 	}
 }
 
@@ -121,10 +121,15 @@ func ParseReportDescriptor(raw []byte) {
 
 func main() {
 	hid.Init()
+	defer hid.Exit()
+
+	// this is the steering wheel
 	dev, err := hid.Open(1103, 46742, "")
+	// dev, err := hid.Open(1118, 2354, "fe:8c:7c:9e:14:69")
 	if err != nil {
 		log.Fatalf("error while opening device: %v", err)
 	}
+	defer dev.Close()
 
 	devInfo, err := dev.GetDeviceInfo()
 	if err != nil {
@@ -140,4 +145,11 @@ func main() {
 	b = b[0:r]
 
 	ParseReportDescriptor(b)
+
+	// throttle; [5..=6]
+	// b = make([]byte, 128)
+	// for {
+	// 	dev.Read(b)
+	// 	fmt.Printf("%08b\n", b)
+	// }
 }
