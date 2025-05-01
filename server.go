@@ -7,70 +7,24 @@ import (
 	"log"
 
 	"github.com/sstallion/go-hid"
+
+	"github.com/k86td/web-hid-controller/gen"
 )
 
 const MAX_READ = 512
 
-//go:generate stringer -type=ItemType
-type ItemType byte
-
-// setting 6 bits values
-
-const (
-	ItemMainInput           ItemType = 0b100000
-	ItemMainOutput          ItemType = 0b100100
-	ItemMainFeature         ItemType = 0b101100
-	ItemMainStartCollection ItemType = 0b101000
-	ItemMainEndCollection   ItemType = 0b110000
-
-	ItemGlobalUsagePage       ItemType = 0b000001
-	ItemGlobalLogicalMinimum  ItemType = 0b000101
-	ItemGlobalLogicalMaximum  ItemType = 0b001001
-	ItemGlobalPhysicalMinimum ItemType = 0b001101
-	ItemGlobalPhysicalMaximum ItemType = 0b010001
-	ItemGlobalUnitExponent    ItemType = 0b010101
-	ItemGlobalUnit            ItemType = 0b011001
-	ItemGlobalReportSize      ItemType = 0b011101
-	ItemGlobalReportId        ItemType = 0b100001
-	ItemGlobalReportCount     ItemType = 0b100101
-	ItemGlobalPush            ItemType = 0b101001
-	ItemGlobalPop             ItemType = 0b101101
-
-	ItemLocalUsage             ItemType = 0b000010
-	ItemLocalUsageMinimum      ItemType = 0b000110
-	ItemLocalUsageMaximum      ItemType = 0b001010
-	ItemLocalDesignatorIndex   ItemType = 0b001110
-	ItemLocalDesignatorMinimum ItemType = 0b010010
-	ItemLocalDesignatorMaximum ItemType = 0b010110
-	ItemLocalStringIndex       ItemType = 0b011110
-	ItemLocalStringMinimum     ItemType = 0b100010
-	ItemLocalStringMaximum     ItemType = 0b100110
-	ItemLocalDelimiter         ItemType = 0b101010
-)
-
-//go:generate stringer -type=MainCollectionType
-type MainCollectionType byte
-
-const (
-	MainCollectionTypePhysical      MainCollectionType = 0x00
-	MainCollectionTypeApplication   MainCollectionType = 0x01
-	MainCollectionTypeLogical       MainCollectionType = 0x02
-	MainCollectionTypeReport        MainCollectionType = 0x03
-	MainCollectionTypeNamedArray    MainCollectionType = 0x04
-	MainCollectionTypeUsageSwitch   MainCollectionType = 0x05
-	MainCollectionTypeUsageModifier MainCollectionType = 0x06
-)
-
 type ShortItem struct {
 	BSize uint8
-	BType ItemType
+	BType gen.ItemType
 	Data  []byte
 }
 
 func (i ShortItem) String() string {
 	switch i.BType {
-	case ItemMainStartCollection:
-		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, MainCollectionType(i.Data[0]))
+	case gen.ItemMainStartCollection:
+		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.MainCollectionType(i.Data[0]))
+	case gen.ItemMainInput:
+		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.NewItemMainInputFlags(i.Data[0]))
 	default:
 		return fmt.Sprintf("ShortItem<%v>{ %v } (%08b)", i.BType, i.Data, i.Data)
 	}
@@ -79,7 +33,7 @@ func (i ShortItem) String() string {
 func NewShortItem(raw byte) ShortItem {
 	return ShortItem{
 		BSize: []byte{0, 1, 2, 4}[0b00000011&raw],
-		BType: ItemType(0b11111100 & raw >> 2),
+		BType: gen.ItemType(0b11111100 & raw >> 2),
 	}
 }
 
