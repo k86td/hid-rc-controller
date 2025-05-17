@@ -25,6 +25,10 @@ func (i ShortItem) String() string {
 		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.MainCollectionType(i.Data[0]))
 	case gen.ItemMainInput:
 		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.NewItemMainInputFlags(i.Data[0]))
+	case gen.ItemGlobalUsagePage:
+		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.UsagePage(i.Data[0]))
+	case gen.ItemLocalUsage:
+		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.UsageType(i.Data[0]))
 	default:
 		return fmt.Sprintf("ShortItem<%v>{ %v } (%08b)", i.BType, i.Data, i.Data)
 	}
@@ -77,9 +81,15 @@ func main() {
 	hid.Init()
 	defer hid.Exit()
 
+	// hid.Enumerate(0, 0, func(info *hid.DeviceInfo) error {
+	// 	fmt.Println(info)
+	// 	return nil
+	// })
+
 	// this is the steering wheel
-	dev, err := hid.Open(1103, 46742, "")
+	// dev, err := hid.Open(1103, 46742, "")
 	// dev, err := hid.Open(1118, 2354, "fe:8c:7c:9e:14:69")
+	dev, err := hid.Open(1356, 3302, "14:3a:9a:0b:84:5a") // this is Sony Controller
 	if err != nil {
 		log.Fatalf("error while opening device: %v", err)
 	}
@@ -100,7 +110,6 @@ func main() {
 
 	ParseReportDescriptor(b)
 
-	// throttle; [5..=6]
 	// b = make([]byte, 128)
 	// for {
 	// 	dev.Read(b)
