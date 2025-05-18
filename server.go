@@ -28,7 +28,7 @@ func (i ShortItem) String() string {
 	case gen.ItemGlobalUsagePage:
 		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.UsagePage(i.Data[0]))
 	case gen.ItemLocalUsage:
-		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.UsageType(i.Data[0]))
+		return fmt.Sprintf("ShortItem<%v>{ %v }", i.BType, gen.GenericDesktopUsageType(i.Data[0]))
 	default:
 		return fmt.Sprintf("ShortItem<%v>{ %v } (%08b)", i.BType, i.Data, i.Data)
 	}
@@ -75,6 +75,15 @@ func ParseReportDescriptor(raw []byte) {
 		itm.ConsumeData(rd)
 		fmt.Println(itm)
 	}
+}
+
+// TODO: still hard-coding some stuff that will need to be handled correctly eventually
+type Report struct {
+	Size   byte
+	Count  byte
+	Min    uint16
+	Max    uint16
+	Usages []gen.GenericDesktopUsageType
 }
 
 func main() {
